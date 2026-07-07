@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPLPKK — Lembaga Pengawas Kokurikulum · SMK Tinggi Kuching</title>
+<style>
+  :root{
+    --navy:#1B2A4A; --navy2:#2E4472; --gold:#B8902E; --gold2:#D4AF37;
+    --light:#F5F7FB; --line:#E7ECF4; --ink:#1B2338; --muted:#6B7793;
+    --ok:#1E7A4B; --warn:#B23B3B; --radius:14px;
+    --shadow:0 6px 22px rgba(27,42,74,.10);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Calibri,"Segoe UI",Arial,sans-serif;color:var(--ink);
+    background:var(--light);-webkit-font-smoothing:antialiased}
+  h1,h2,h3,.serif{font-family:Cambria,Georgia,"Times New Roman",serif}
+  button{font-family:inherit;cursor:pointer}
+  .hidden{display:none!important}
+
+  /* ---------- Gerbang PIN ---------- */
+  #gate{min-height:100dvh;display:grid;place-items:center;padding:24px;
+    background:radial-gradient(1200px 600px at 50% -10%,#24365e 0%,var(--navy) 60%)}
+  .gate-card{width:100%;max-width:380px;background:#fff;border-radius:20px;
+    box-shadow:var(--shadow);padding:34px 28px;text-align:center}
+  .crest{width:64px;height:64px;margin:0 auto 14px;border-radius:50%;
+    background:var(--navy);display:grid;place-items:center;color:var(--gold2);
+    font-family:Cambria,Georgia,serif;font-size:26px;font-weight:700;
+    box-shadow:inset 0 0 0 2px var(--gold)}
+  .gate-card h1{margin:.2em 0 .1em;font-size:22px;color:var(--navy);letter-spacing:.3px}
+  .gate-card .sub{color:var(--muted);font-size:13px;margin-bottom:22px}
+  .pin-input{width:100%;text-align:center;letter-spacing:10px;font-size:26px;
+    padding:14px;border:1.5px solid var(--line);border-radius:12px;outline:none;
+    color:var(--navy);font-weight:700}
+  .pin-input:focus{border-color:var(--gold)}
+  .btn{width:100%;margin-top:16px;padding:14px;border:none;border-radius:12px;
+    background:var(--navy);color:#fff;font-size:16px;font-weight:600}
+  .btn:hover{background:var(--navy2)} .btn:active{transform:translateY(1px)}
+  .msg{margin-top:14px;font-size:13px;min-height:18px;line-height:1.5}
+  .msg.err{color:var(--warn)} .msg.ok{color:var(--ok)}
+
+  /* ---------- Cangkerang ---------- */
+  header.app{background:var(--navy);color:#fff;padding:12px 18px;display:flex;
+    align-items:center;gap:12px;flex-wrap:wrap;box-shadow:var(--shadow)}
+  header.app .brand{display:flex;align-items:center;gap:10px;font-family:Cambria,Georgia,serif;
+    font-size:18px;font-weight:700;cursor:pointer}
+  header.app .dot{width:30px;height:30px;border-radius:50%;background:#24365e;
+    display:grid;place-items:center;color:var(--gold2);box-shadow:inset 0 0 0 1.5px var(--gold)}
+  header.app .spacer{flex:1}
+  .pill{background:rgba(255,255,255,.12);border:1px solid rgba(212,175,55,.5);
+    color:#fff;padding:6px 12px;border-radius:999px;font-size:13px}
+  .pill.arkib-pill{background:rgba(212,175,55,.22);border-color:var(--gold2);color:#ffe9ad}
+  select.sesi{background:#24365e;color:#fff;border:1px solid var(--gold);
+    padding:7px 10px;border-radius:10px;font-size:14px}
+  .logout{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35);
+    padding:7px 12px;border-radius:10px;font-size:13px}
+  .logout:hover{border-color:var(--gold2)}
+
+  main{max-width:1000px;margin:22px auto;padding:0 18px 60px}
+  .banner{background:#fff;border-left:4px solid var(--gold);border-radius:12px;
+    padding:16px 18px;box-shadow:var(--shadow);margin-bottom:20px;display:flex;
+    justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+  .banner h2{margin:0 0 4px;font-size:19px;color:var(--navy)}
+  .banner p{margin:0;color:var(--muted);font-size:14px}
+  .conn{font-size:12px;color:var(--muted);white-space:nowrap}
+  .conn b.ok{color:var(--ok)} .conn b.bad{color:var(--warn)}
+
+  .section-title{font-size:13px;text-transform:uppercase;letter-spacing:1.5px;
+    color:var(--gold);font-weight:700;margin:24px 4px 12px}
+
+  /* ---------- Kad statistik ---------- */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 18px;box-shadow:var(--shadow);border-top:3px solid var(--navy)}
+  .stat.gold{border-top-color:var(--gold)}
+  .stat.warnbox{border-top-color:var(--warn)}
+  .stat .num{font-family:Cambria,Georgia,serif;font-size:34px;font-weight:700;color:var(--navy);line-height:1}
+  .stat.warnbox .num{color:var(--warn)}
+  .stat .lab{color:var(--muted);font-size:12.5px;margin-top:6px}
+
+  /* ---------- Panel carta ---------- */
+  .panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px;box-shadow:var(--shadow)}
+  .panel.wide{grid-column:1/-1}
+  .panel h3{margin:0 0 14px;font-size:15px;color:var(--navy)}
+  .donut-wrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .legend{display:flex;flex-direction:column;gap:7px;font-size:13px;color:var(--ink)}
+  .lg{display:flex;align-items:center;gap:8px}
+  .lg i{width:12px;height:12px;border-radius:3px;display:inline-block;flex:none}
+  .bar-row{display:grid;grid-template-columns:var(--labw,70px) 1fr 36px;align-items:center;gap:10px;margin:8px 0}
+  .bar-lab{font-size:12.5px;color:var(--muted);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bar-track{background:var(--light);border-radius:6px;height:14px;overflow:hidden;border:1px solid var(--line)}
+  .bar-fill{display:block;height:100%;border-radius:6px;transition:width .5s ease}
+  .bar-val{font-size:13px;font-weight:700;color:var(--navy)}
+
+  /* ---------- Operasi ---------- */
+  .op-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+  .op{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:15px 16px;box-shadow:var(--shadow)}
+  .op .t{font-size:12px;color:var(--muted)}
+  .op .n{font-size:26px;font-weight:700;color:var(--navy);font-family:Cambria,Georgia,serif;line-height:1.1;margin-top:3px}
+  .op .n.warn{color:var(--warn)}
+  .op .s{font-size:11px;color:var(--muted);margin-top:4px}
+
+  /* ---------- Modul ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+  .mcard{background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px;box-shadow:var(--shadow);position:relative;text-align:left;width:100%}
+  .mcard .ico{width:38px;height:38px;border-radius:50%;background:var(--navy);
+    color:var(--gold2);display:grid;place-items:center;font-size:18px;margin-bottom:10px}
+  .mcard h3{margin:0 0 4px;font-size:16px;color:var(--navy)}
+  .mcard p{margin:0;color:var(--muted);font-size:13px}
+  .mcard .tag{position:absolute;top:12px;right:12px;font-size:10px;font-weight:700;
+    letter-spacing:.5px;padding:3px 8px;border-radius:999px;background:var(--line);color:var(--muted)}
+  .mcard.live{cursor:pointer;transition:transform .08s,box-shadow .2s}
+  .mcard.live:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(27,42,74,.16)}
+  .mcard.live .tag{background:#e6f4ec;color:var(--ok)}
+  .mcard.soon{opacity:.6}
+  .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:28px}
+
+  /* ---------- Direktori (M2) ---------- */
+  .back{background:none;border:none;color:var(--navy2);font-size:14px;font-weight:600;padding:6px 2px;margin-bottom:6px}
+  .back:hover{color:var(--gold)}
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 4px}
+  .toolbar input,.toolbar select{padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;color:var(--ink);background:#fff;outline:none}
+  .toolbar input:focus,.toolbar select:focus{border-color:var(--gold)}
+  .toolbar .search{flex:1;min-width:180px}
+  .count{color:var(--muted);font-size:13px;margin:10px 4px}
+  .dir-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+  .pcard{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);display:flex;gap:13px;align-items:flex-start}
+  .avatar{width:46px;height:46px;border-radius:50%;flex:none;background:var(--navy);color:var(--gold2);display:grid;place-items:center;font-weight:700;font-size:16px;font-family:Cambria,Georgia,serif;box-shadow:inset 0 0 0 1.5px var(--gold)}
+  .pcard .nm{font-weight:700;color:var(--navy);font-size:15px;line-height:1.25}
+  .pcard .meta{color:var(--muted);font-size:12.5px;margin-top:3px;line-height:1.5}
+  .kelas-badge{display:inline-block;background:var(--light);border:1px solid var(--line);color:var(--navy);border-radius:6px;padding:1px 7px;font-size:11px;font-weight:600;margin-right:5px}
+  .jaw{color:var(--gold);font-weight:700}
+  .sens{margin-top:6px;font-size:12px;color:var(--navy2)}
+  .sens.locked{color:var(--muted);font-style:italic}
+  .empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:40px 0;font-size:14px}
+
+  /* ---------- Penjana Sijil (M7) ---------- */
+  .form-panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:16px}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:13px;font-weight:600;color:var(--navy);margin-bottom:6px}
+  .field input,.field select{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;outline:none}
+  .field input:focus,.field select:focus{border-color:var(--gold)}
+  .field .hint{font-size:12px;color:var(--muted);margin-top:4px}
+  .seg{display:flex;gap:8px}
+  .seg button{flex:1;padding:11px;border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--muted);font-weight:600;font-size:14px}
+  .seg button.on{border-color:var(--gold);background:#fbf6e8;color:var(--navy)}
+  .rcp-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .rcp-actions{display:flex;gap:8px}
+  .linkbtn{background:none;border:none;color:var(--navy2);font-weight:600;font-size:13px}
+  .linkbtn:hover{color:var(--gold)}
+  .rcp-list{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:6px}
+  .rcp{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer}
+  .rcp:hover{background:var(--light)}
+  .rcp input{width:17px;height:17px;accent-color:var(--gold)}
+  .rcp .nm{font-weight:600;color:var(--navy);font-size:14px}
+  .rcp .mt{color:var(--muted);font-size:12px}
+  .selcount{color:var(--navy);font-weight:700;font-size:13px}
+  .btn.gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#2a2200}
+  .btn.gold:hover{filter:brightness(1.03)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .notice{background:#fbf6e8;border:1px solid var(--gold2);border-radius:10px;padding:12px 14px;color:var(--navy);font-size:13.5px}
+
+  /* ---------- Modal cetak + sijil A4 ---------- */
+  #printModal{position:fixed;inset:0;background:rgba(10,16,30,.72);z-index:50;overflow:auto;padding:24px}
+  #printModalBar{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;gap:10px;
+    background:var(--navy);color:#fff;padding:12px 16px;border-radius:12px;margin-bottom:16px;box-shadow:var(--shadow)}
+  #printModalBar .ttl{font-family:Cambria,Georgia,serif;font-weight:700}
+  #printModalBar .acts{display:flex;gap:8px}
+  #printModalBar button{padding:9px 16px;border-radius:9px;border:none;font-weight:600;font-size:14px}
+  .bClose{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4)!important}
+  .bPrint{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#2a2200}
+
+  .cert-page{box-sizing:border-box;width:297mm;height:210mm;background:#fff;margin:0 auto 18px;
+    padding:12mm;position:relative;font-family:Cambria,Georgia,serif;color:var(--navy)}
+  .cert-frame{width:100%;height:100%;border:3px solid var(--navy);padding:6mm;position:relative}
+  .cert-frame::after{content:"";position:absolute;inset:4mm;border:1px solid var(--gold);pointer-events:none}
+  .cert-inner{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;text-align:center;padding:6mm 10mm}
+  .cert-school{font-size:26px;font-weight:700;letter-spacing:1px}
+  .cert-sub{font-size:14px;color:var(--gold);letter-spacing:2px;margin-top:2px}
+  .cert-addr{font-size:11px;color:var(--muted);font-family:Calibri,Arial,sans-serif;margin-top:2px}
+  .cert-title{font-size:40px;font-weight:700;color:var(--gold);letter-spacing:3px;margin:14px 0 4px}
+  .cert-line{font-family:Calibri,Arial,sans-serif;font-size:14px;color:#333;margin-top:14px}
+  .cert-name{font-size:34px;font-weight:700;color:var(--navy);margin:8px 0 2px;border-bottom:2px solid var(--gold);padding:0 24px 6px}
+  .cert-role{font-family:Calibri,Arial,sans-serif;font-size:14px;color:var(--navy2)}
+  .cert-prog{font-size:20px;font-weight:700;margin:10px 0 2px}
+  .cert-date{font-family:Calibri,Arial,sans-serif;font-size:13px;color:#444}
+  .cert-sign{display:flex;justify-content:space-around;width:100%;margin-top:auto;padding-top:10mm;font-family:Calibri,Arial,sans-serif}
+  .cert-sign .col{width:30%}
+  .cert-sign .ln{border-top:1px solid var(--navy);margin-bottom:4px}
+  .cert-sign .nm{font-size:12.5px;font-weight:700;min-height:16px}
+  .cert-sign .rl{font-size:11px;color:var(--muted)}
+  .cert-serial{position:absolute;bottom:2mm;right:4mm;font-family:Calibri,Arial,sans-serif;font-size:10px;color:var(--muted)}
+  .cert-seal{position:absolute;top:2mm;right:2mm;width:22mm;height:22mm;border-radius:50%;border:2px solid var(--gold);
+    display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:9px;text-align:center;font-family:Calibri,Arial,sans-serif;opacity:.85}
+
+  @media print{
+    @page{size:A4 landscape;margin:0}
+    body *{visibility:hidden}
+    #printModal,#printModal *{visibility:visible}
+    #printModal{position:absolute;inset:0;background:#fff;padding:0;overflow:visible}
+    #printModalBar{display:none!important}
+    .cert-page{margin:0;page-break-after:always;box-shadow:none}
+  }
+
+  @media(max-width:520px){header.app .brand{font-size:16px}}
+</style>
+</head>
+<body>
+
+<!-- ============ GERBANG PIN ============ -->
+<div id="gate">
+  <div class="gate-card">
+    <div class="crest serif">PK</div>
+    <h1 class="serif">SPLPKK</h1>
+    <div class="sub">Lembaga Pengawas Kokurikulum<br>SMK Tinggi Kuching</div>
+    <input id="pin" class="pin-input" type="password" inputmode="numeric" maxlength="8" placeholder="••••••" autocomplete="off" aria-label="PIN">
+    <button class="btn" id="btnLogin">Masuk</button>
+    <div id="gateMsg" class="msg"></div>
+  </div>
+</div>
+
+<!-- ============ APLIKASI ============ -->
+<div id="app" class="hidden">
+  <header class="app">
+    <div class="brand" id="homeBtn"><span class="dot serif">PK</span> SPLPKK</div>
+    <div class="spacer"></div>
+    <span class="pill" id="rolePill">—</span>
+    <span class="pill arkib-pill hidden" id="arkibPill">🔒 Arkib · baca-sahaja</span>
+    <select class="sesi" id="sesiSel" title="Tukar sesi"></select>
+    <button class="logout" id="btnLogout">Log Keluar</button>
+  </header>
+
+  <!-- ===== PAPAN PEMUKA (M1) ===== -->
+  <main id="viewDashboard">
+    <div class="banner">
+      <div>
+        <h2 class="serif">Papan Pemuka</h2>
+        <p id="welcome">Gambaran keseluruhan lembaga bagi sesi terpilih.</p>
+      </div>
+      <div class="conn" id="conn">Menyemak sambungan…</div>
+    </div>
+
+    <div class="section-title">Ringkasan</div>
+    <div class="stats" id="statCards"></div>
+
+    <div class="section-title">Taburan Ahli</div>
+    <div class="panels" id="chartPanels"></div>
+
+    <div class="section-title">Operasi</div>
+    <div class="op-grid" id="opGrid"></div>
+
+    <div class="section-title">Modul</div>
+    <div class="grid" id="moduleGrid"></div>
+    <div class="foot">SPLPKK · SMK Tinggi Kuching · Tema navy &amp; emas · Fasa 1 · M1</div>
+  </main>
+
+  <!-- ===== DIREKTORI PENGAWAS (M2) ===== -->
+  <main id="viewDirektori" class="hidden">
+    <button class="back" id="dirBack">← Kembali ke Papan Pemuka</button>
+    <div class="banner"><div><h2 class="serif">Direktori Pengawas</h2>
+      <p>Profil setiap ahli lembaga bagi sesi terpilih. Cari &amp; tapis di bawah.</p></div></div>
+    <div class="toolbar">
+      <input class="search" id="dirSearch" type="search" placeholder="Cari nama, kelas atau e-mel…">
+      <select id="fUnit"><option value="">Semua unit</option></select>
+      <select id="fKelas"><option value="">Semua kelas</option></select>
+      <select id="fJantina"><option value="">Semua jantina</option></select>
+    </div>
+    <div class="count" id="dirCount">Memuatkan…</div>
+    <div class="dir-grid" id="dirGrid"></div>
+    <div class="foot">Medan sensitif (No. Telefon, Alamat) hanya kelihatan kepada Admin &amp; Setiausaha.</div>
+  </main>
+
+  <!-- ===== ARKIB SESI & PENUKAR SESI (M10) ===== -->
+  <main id="viewArkib" class="hidden">
+    <button class="back" id="arkibBack">← Kembali ke Papan Pemuka</button>
+    <div class="banner"><div><h2 class="serif">Arkib Sesi</h2>
+      <p>Lihat sesi lampau (baca-sahaja) atau tukar sesi semasa. Tahun baharu = tambah sesi, tiada perubahan struktur.</p></div></div>
+    <div class="section-title">Senarai Sesi</div>
+    <div class="dir-grid" id="sesiGrid"></div>
+    <div id="adminSesi" class="hidden">
+      <div class="section-title">Tambah Sesi Baharu · Admin</div>
+      <div class="panel">
+        <p style="margin:0 0 12px;color:var(--muted);font-size:13.5px">
+          Menambah sesi menjadikannya <b>sesi semasa</b> yang boleh diubah. Sesi sebelumnya automatik menjadi arkib baca-sahaja. Ahli sesi baharu ditambah kemudian melalui proses pelantikan.</p>
+        <div class="toolbar" style="margin:0">
+          <input id="sesiBaru" type="number" placeholder="cth. 2027" style="max-width:150px">
+          <button class="btn" id="btnTambahSesi" style="width:auto;margin-top:0;padding:11px 18px">Tambah &amp; jadikan semasa</button>
+        </div>
+        <div id="sesiMsg" class="msg"></div>
+      </div>
+    </div>
+    <div class="foot">Sesi semasa: <b id="sesiSemasaFoot">—</b> · sesi lampau kekal baca-sahaja.</div>
+  </main>
+
+  <!-- ===== PENJANA SIJIL (M7) ===== -->
+  <main id="viewSijil" class="hidden">
+    <button class="back" id="sijilBack">← Kembali ke Papan Pemuka</button>
+    <div class="banner"><div><h2 class="serif">Penjana Sijil</h2>
+      <p>Pilih program &amp; penerima — nama, kelas, jawatan dan no. siri diisi automatik.</p></div></div>
+    <div id="sijilBody"></div>
+  </main>
+</div>
+
+<!-- ===== MODAL CETAK SIJIL ===== -->
+<div id="printModal" class="hidden">
+  <div id="printModalBar">
+    <span class="ttl" id="printTitle">Pratonton Sijil</span>
+    <span class="acts">
+      <button class="bClose" id="printClose">Tutup</button>
+      <button class="bPrint" id="printGo">Cetak / Simpan PDF</button>
+    </span>
+  </div>
+  <div id="printRoot"></div>
+</div>
+
+<script>
+/* ====================================================================
+   KONFIGURASI — GANTIKAN dengan URL Web App GAS anda (…/exec)
+   ==================================================================== */
+const API = "https://script.google.com/macros/s/AKfycbwJiZmd2fsUnfQz62WVxgxN1KCC3HxS_6dRvP-5gIskZxMaPEdE8cIRyx3gFLKnCX5QAQ/exec";
+const API_BELUM_SET = () => !API || API.indexOf("PASTE_URL") !== -1 || API.indexOf("/exec") === -1;
+
+const PAL = ["#1B2A4A","#B8902E","#2E4472","#D4AF37","#6B7793","#8FA0C0","#C9A227","#4A5B85"];
+
+/* --------- Pembungkus api() TUNGGAL --------- */
+async function api(action, params = {}, method = "GET") {
+  if (API_BELUM_SET())
+    throw new Error("URL API belum ditetapkan. Ganti pemboleh ubah API dengan URL /exec dari deployment GAS anda.");
+  let url = API, opt = {};
+  if (method === "GET") url += "?action=" + encodeURIComponent(action) + "&" + new URLSearchParams(params);
+  else opt = { method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body: JSON.stringify({ action, ...params }) };
+  let r;
+  try { r = await fetch(url, opt); }
+  catch (e) { throw new Error("Tidak dapat menghubungi backend. Pastikan GAS di-deploy (Access: Anyone), guna URL /exec, dan skrip diberi kebenaran."); }
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || "Ralat API");
+  return j.data;
+}
+
+/* --------- Keadaan --------- */
+const SES = { get(){ return sessionStorage.getItem("splpkk_sesi") || "2026"; }, set(v){ sessionStorage.setItem("splpkk_sesi", v); } };
+const AUTH = {
+  get(){ try{ return JSON.parse(sessionStorage.getItem("splpkk_auth")); }catch(e){ return null; } },
+  set(o){ sessionStorage.setItem("splpkk_auth", JSON.stringify(o)); },
+  clear(){ sessionStorage.removeItem("splpkk_auth"); }
+};
+const CAN_SEE_SENSITIVE = ["Admin","Setiausaha"];
+
+const MODULES = [
+  { id:"dashboard", ico:"📊", nama:"Papan Pemuka",       ket:"Statistik lembaga",          fasa:1, live:true  },
+  { id:"direktori", ico:"👥", nama:"Direktori Pengawas", ket:"Profil & carian ahli",       fasa:1, live:true  },
+  { id:"arkib",     ico:"🗂️", nama:"Arkib Sesi",         ket:"Sejarah & tukar sesi",       fasa:1, live:true  },
+  { id:"sijil",     ico:"🏅", nama:"Penjana Sijil",      ket:"Penyertaan & penghargaan",   fasa:2, live:true  },
+  { id:null,        ico:"✉️", nama:"Penjana Surat",      ket:"Kebenaran / keluar kelas",   fasa:2, live:false },
+  { id:null,        ico:"📄", nama:"Penjana Laporan",    ket:"Laporan bergambar",          fasa:2, live:false },
+  { id:null,        ico:"✅", nama:"Tugasan",            ket:"Agih & pantau tugas",        fasa:3, live:false },
+  { id:null,        ico:"📅", nama:"Takwim & Kehadiran", ket:"Program tahunan",            fasa:3, live:false },
+  { id:null,        ico:"📁", nama:"Pengurusan Projek",  ket:"AJK · timeline · milestone", fasa:3, live:false },
+  { id:null,        ico:"📚", nama:"Pusat Rujukan Buku", ket:"Buku pengurusan + eviden",   fasa:4, live:false },
+  { id:null,        ico:"⚙️", nama:"Tetapan & Sandaran", ket:"Config · peranan · backup",  fasa:4, live:false },
+];
+
+/* ==================== GERBANG PIN ==================== */
+const pinEl = document.getElementById("pin"), gateMsg = document.getElementById("gateMsg");
+document.getElementById("btnLogin").addEventListener("click", doLogin);
+pinEl.addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+async function doLogin(){
+  const pin = pinEl.value.trim();
+  if (!pin){ setGate("Sila masukkan PIN.", "err"); return; }
+  setGate("Menyemak…", "");
+  try { const a = await api("login", { pin }, "POST"); AUTH.set({ peranan:a.peranan, pin }); setGate("Berjaya. Membuka…","ok"); enterApp(); }
+  catch (err){ setGate(err.message || "PIN tidak sah.", "err"); pinEl.select(); }
+}
+function setGate(t, cls){ gateMsg.textContent = t; gateMsg.className = "msg " + (cls||""); }
+
+/* ==================== CANGKERANG ==================== */
+let SESI_INFO = null;
+
+function enterApp(){
+  const auth = AUTH.get();
+  document.getElementById("gate").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  document.getElementById("rolePill").textContent = auth.peranan;
+
+  document.getElementById("sesiSel").addEventListener("change", (e) => {
+    SES.set(e.target.value); updateArkibPill();
+    refreshDashboard();
+    if(!isHidden("viewDirektori")) loadDirektori();
+    if(!isHidden("viewArkib")) renderArkib();
+  });
+  document.getElementById("btnLogout").addEventListener("click", () => { AUTH.clear(); location.reload(); });
+  document.getElementById("homeBtn").addEventListener("click", showDashboard);
+  document.getElementById("dirBack").addEventListener("click", showDashboard);
+  document.getElementById("arkibBack").addEventListener("click", showDashboard);
+  document.getElementById("btnTambahSesi").addEventListener("click", tambahSesiUI);
+  document.getElementById("sijilBack").addEventListener("click", showDashboard);
+  document.getElementById("printClose").addEventListener("click", closePrint);
+  document.getElementById("printGo").addEventListener("click", () => window.print());
+
+  renderModules();
+  loadConfig();
+  loadSesiList().finally(showDashboard);
+}
+
+function isHidden(id){ return document.getElementById(id).classList.contains("hidden"); }
+function setView(id){
+  ["viewDashboard","viewDirektori","viewArkib","viewSijil"].forEach(v =>
+    document.getElementById(v).classList.toggle("hidden", v !== id));
+}
+function showDashboard(){ setView("viewDashboard"); refreshDashboard(); }
+function showDirektori(){ setView("viewDirektori"); loadDirektori(); }
+function showArkib(){ setView("viewArkib"); renderArkib(); }
+function showSijil(){ setView("viewSijil"); renderSijil(); }
+
+function renderModules(){
+  const grid = document.getElementById("moduleGrid"); grid.innerHTML = "";
+  MODULES.forEach(m => {
+    const el = document.createElement(m.live ? "button" : "div");
+    el.className = "mcard " + (m.live ? "live" : "soon");
+    el.innerHTML = `<span class="tag">${m.live ? "Aktif" : "Fasa "+m.fasa}</span>
+      <div class="ico">${m.ico}</div><h3>${m.nama}</h3><p>${m.ket}</p>`;
+    if (m.id === "direktori") el.addEventListener("click", showDirektori);
+    if (m.id === "dashboard") el.addEventListener("click", showDashboard);
+    if (m.id === "arkib")     el.addEventListener("click", showArkib);
+    if (m.id === "sijil")     el.addEventListener("click", showSijil);
+    grid.appendChild(el);
+  });
+}
+
+/* ==================== SESI & ARKIB (M10) ==================== */
+async function loadSesiList(){
+  const cached = readCache("splpkk_sesilist");
+  if (cached){ SESI_INFO = cached; populateSesiSelect(); }
+  try {
+    const info = await api("sesiList");
+    SESI_INFO = info; writeCache("splpkk_sesilist", info); populateSesiSelect();
+  } catch(e){
+    if (!SESI_INFO) SESI_INFO = { sesi:["2026","2025"], semasa:"2026", kira_ahli:{} };
+    populateSesiSelect();
+  }
+}
+function populateSesiSelect(){
+  const sel = document.getElementById("sesiSel");
+  const list = (SESI_INFO && SESI_INFO.sesi && SESI_INFO.sesi.length) ? SESI_INFO.sesi : ["2026"];
+  let cur = SES.get();
+  if (list.indexOf(cur) === -1){ cur = (SESI_INFO && SESI_INFO.semasa) || list[0]; SES.set(cur); }
+  sel.innerHTML = list.map(s =>
+    `<option value="${esc(s)}">Sesi ${esc(s)}${s === (SESI_INFO&&SESI_INFO.semasa) ? " · semasa" : ""}</option>`).join("");
+  sel.value = cur;
+  updateArkibPill();
+}
+function isArkib(){ return !!(SESI_INFO && SES.get() !== SESI_INFO.semasa); }
+function updateArkibPill(){ document.getElementById("arkibPill").classList.toggle("hidden", !isArkib()); }
+
+function renderArkib(){
+  const info = SESI_INFO || { sesi:[], semasa:"", kira_ahli:{} };
+  document.getElementById("sesiSemasaFoot").textContent = info.semasa || "—";
+  const grid = document.getElementById("sesiGrid");
+  grid.innerHTML = info.sesi.map(s => {
+    const semasa = s === info.semasa;
+    const n = (info.kira_ahli && info.kira_ahli[s]) || 0;
+    const dipapar = SES.get() === s;
+    const badge = semasa
+      ? `<span class="kelas-badge" style="background:#e6f4ec;color:var(--ok);border-color:#bfe6cf">Semasa</span>`
+      : `<span class="kelas-badge">🔒 Arkib</span>`;
+    return `<div class="pcard" style="flex-direction:column;align-items:flex-start;gap:8px">
+      <div style="display:flex;justify-content:space-between;width:100%;align-items:center">
+        <div class="nm" style="font-size:20px">Sesi ${esc(s)}</div>${badge}
+      </div>
+      <div class="meta">${n} pengawas${dipapar ? " · sedang dipapar" : ""}</div>
+      <button class="btn" data-sesi="${esc(s)}" style="width:auto;margin-top:4px;padding:9px 16px;${dipapar?'opacity:.45;pointer-events:none':''}">Papar sesi ini</button>
+    </div>`;
+  }).join("") || '<div class="empty">Tiada sesi.</div>';
+
+  grid.querySelectorAll("button[data-sesi]").forEach(b =>
+    b.addEventListener("click", () => {
+      const s = b.getAttribute("data-sesi");
+      SES.set(s); document.getElementById("sesiSel").value = s; updateArkibPill();
+      showDashboard();
+    }));
+
+  document.getElementById("adminSesi").classList.toggle("hidden", AUTH.get().peranan !== "Admin");
+}
+
+async function tambahSesiUI(){
+  const auth = AUTH.get();
+  const v = document.getElementById("sesiBaru").value.trim();
+  const msg = document.getElementById("sesiMsg");
+  if (!/^\d{4}$/.test(v)){ msg.textContent = "Masukkan tahun 4-digit (cth. 2027)."; msg.className = "msg err"; return; }
+  msg.textContent = "Menyimpan…"; msg.className = "msg";
+  try {
+    await api("tambahSesi", { sesiBaharu:v, peranan:auth.peranan, pin:auth.pin }, "POST");
+    await loadSesiList();
+    SES.set(v); document.getElementById("sesiSel").value = v; updateArkibPill();
+    msg.textContent = "Sesi " + v + " ditambah & kini menjadi sesi semasa."; msg.className = "msg ok";
+    renderArkib();
+  } catch(e){ msg.textContent = e.message; msg.className = "msg err"; }
+}
+
+/* ==================== PAPAN PEMUKA (M1) ==================== */
+async function refreshDashboard(){
+  const sesi = SES.get();
+  const conn = document.getElementById("conn");
+  const key = "splpkk_stats_" + sesi;
+  const cached = readCache(key);
+  if (cached) renderDashboard(cached);
+
+  try {
+    conn.innerHTML = "Sambungan: <b class='ok'>menyambung…</b>";
+    const s = await api("stats", { sesi });
+    writeCache(key, s); renderDashboard(s);
+    conn.innerHTML = "Sambungan: <b class='ok'>bersambung ✓</b> · Sesi " + sesi;
+  } catch(e){
+    conn.innerHTML = "Sambungan: <b class='bad'>gagal</b> — " + esc(e.message);
+    if(!cached) document.getElementById("statCards").innerHTML =
+      `<div class="stat"><div class="lab">${esc(e.message)}</div></div>`;
+  }
+}
+
+function renderDashboard(s){
+  // Kad ringkasan
+  const unitCount = Object.keys(s.ikut_unit_uniform || {}).filter(k=>k!=="Tiada").length;
+  document.getElementById("statCards").innerHTML = [
+    card(s.jumlah_ahli, "Jumlah Pengawas", "gold"),
+    card(s.jumlah_lelaki, "Lelaki"),
+    card(s.jumlah_perempuan, "Perempuan"),
+    card(unitCount, "Unit Uniform Terlibat"),
+    card((s.tugasan&&s.tugasan.tertunggak)||0, "Tugasan Tertunggak", (s.tugasan&&s.tugasan.tertunggak)?"warnbox":"")
+  ].join("");
+
+  // Panel carta
+  const jantina = entries(s.ikut_jantina);
+  const kelas   = entries(s.ikut_kelas).sort((a,b)=> String(a[0]).localeCompare(String(b[0])));
+  const kaum    = entries(s.ikut_kaum).sort((a,b)=>b[1]-a[1]);
+  const unit    = entries(s.ikut_unit_uniform).sort((a,b)=>b[1]-a[1]);
+
+  document.getElementById("chartPanels").innerHTML = `
+    <div class="panel">
+      <h3>Pecahan Ikut Jantina</h3>
+      <div class="donut-wrap">${donutSVG(jantina)}<div class="legend">${legend(jantina)}</div></div>
+    </div>
+    <div class="panel">
+      <h3>Pecahan Ikut Kaum</h3>
+      ${bars(kaum, 70)}
+    </div>
+    <div class="panel">
+      <h3>Pengawas Ikut Kelas</h3>
+      ${bars(kelas, 44)}
+    </div>
+    <div class="panel wide">
+      <h3>Pengawas Ikut Unit Uniform</h3>
+      ${bars(unit.map(([k,v])=>[shortUnit(k),v]), 190)}
+    </div>`;
+
+  // Operasi
+  const t = s.tugasan || {}, k = s.kehadiran || {};
+  document.getElementById("opGrid").innerHTML = [
+    op(t.tertunggak||0, "Tugasan Tertunggak", (t.jumlah||0)+" tugasan keseluruhan", (t.tertunggak?"warn":"")),
+    op(t.sedang||0, "Sedang Dijalankan", (t.selesai||0)+" selesai · "+(t.belum||0)+" belum"),
+    op(k.direkod||0, "Rekod Kehadiran", "Modul penuh dibuka pada Fasa 3"),
+    op("—", "Projek Aktif", "Modul dibuka pada Fasa 3")
+  ].join("");
+}
+
+/* --------- Pembina carta (vanilla, tiada pergantungan luar) --------- */
+function card(n, lab, cls=""){ return `<div class="stat ${cls}"><div class="num">${n}</div><div class="lab">${esc(lab)}</div></div>`; }
+function op(n, t, s, cls=""){ return `<div class="op"><div class="t">${esc(t)}</div><div class="n ${cls}">${n}</div><div class="s">${esc(s)}</div></div>`; }
+
+function donutSVG(ent, size=150){
+  const total = ent.reduce((a,[,v])=>a+v,0) || 1;
+  const r=54, c=2*Math.PI*r, cx=size/2, cy=size/2; let off=0, segs="";
+  ent.forEach(([,val],i)=>{
+    const len = val/total*c;
+    segs += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${PAL[i%PAL.length]}" stroke-width="20"
+      stroke-dasharray="${len} ${c-len}" stroke-dashoffset="${-off}" transform="rotate(-90 ${cx} ${cy})"/>`;
+    off += len;
+  });
+  return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" role="img">
+    ${segs}
+    <circle cx="${cx}" cy="${cy}" r="42" fill="#fff"/>
+    <text x="${cx}" y="${cy-2}" text-anchor="middle" font-size="26" font-weight="700" fill="#1B2A4A" font-family="Cambria,Georgia,serif">${total}</text>
+    <text x="${cx}" y="${cy+16}" text-anchor="middle" font-size="10" fill="#6B7793">pengawas</text></svg>`;
+}
+function legend(ent){ return ent.map(([l,v],i)=>`<span class="lg"><i style="background:${PAL[i%PAL.length]}"></i>${esc(l)} <b style="margin-left:auto">(${v})</b></span>`).join(""); }
+function bars(ent, labw=70){
+  if(!ent.length) return '<div class="s" style="color:var(--muted)">Tiada data.</div>';
+  const max = Math.max(...ent.map(([,v])=>v), 1);
+  return `<div style="--labw:${labw}px">` + ent.map(([l,v],i)=>{
+    const w = Math.round(v/max*100);
+    return `<div class="bar-row"><span class="bar-lab" title="${esc(l)}">${esc(l)}</span>
+      <span class="bar-track"><span class="bar-fill" style="width:${w}%;background:${PAL[i%PAL.length]}"></span></span>
+      <span class="bar-val">${v}</span></div>`;
+  }).join("") + `</div>`;
+}
+function entries(o){ return Object.entries(o||{}); }
+
+/* ==================== DIREKTORI PENGAWAS (M2) ==================== */
+let DIR_DATA = [];
+async function loadDirektori(){
+  const sesi = SES.get(), auth = AUTH.get();
+  const boleh = CAN_SEE_SENSITIVE.indexOf(auth.peranan) !== -1;
+  const key = "splpkk_dir_" + sesi + (boleh ? "_full" : "");
+  document.getElementById("dirCount").textContent = "Memuatkan…";
+  const cached = readCache(key);
+  if (cached){ DIR_DATA = cached; buildFilters(); applyFilters(); }
+  try {
+    const rows = boleh
+      ? await api("listFull", { sheet:"Senarai Ahli (Master)", sesi, peranan:auth.peranan, pin:auth.pin }, "POST")
+      : await api("list",     { sheet:"Senarai Ahli (Master)", sesi });
+    DIR_DATA = rows; writeCache(key, rows); buildFilters(); applyFilters();
+  } catch(e){ if(!cached) document.getElementById("dirCount").textContent = "Ralat: " + e.message; }
+}
+function buildFilters(){
+  fillSelect("fUnit",   uniq(DIR_DATA.map(r=>r["Unit Uniform"])), "Semua unit", shortUnit);
+  fillSelect("fKelas",  uniq(DIR_DATA.map(r=>r["Kelas"])).sort(), "Semua kelas");
+  fillSelect("fJantina",uniq(DIR_DATA.map(r=>r["Jantina"])), "Semua jantina");
+}
+function fillSelect(id, vals, allLabel, labelFn){
+  const s = document.getElementById(id), cur = s.value;
+  s.innerHTML = `<option value="">${allLabel}</option>` +
+    vals.filter(Boolean).map(v=>`<option value="${esc(v)}">${esc(labelFn?labelFn(v):v)}</option>`).join("");
+  s.value = cur;
+}
+["dirSearch","fUnit","fKelas","fJantina"].forEach(id => document.getElementById(id).addEventListener("input", applyFilters));
+function applyFilters(){
+  const q=document.getElementById("dirSearch").value.trim().toLowerCase();
+  const u=document.getElementById("fUnit").value, k=document.getElementById("fKelas").value, jn=document.getElementById("fJantina").value;
+  const out = DIR_DATA.filter(r=>{
+    if(u && r["Unit Uniform"]!==u) return false;
+    if(k && r["Kelas"]!==k) return false;
+    if(jn && r["Jantina"]!==jn) return false;
+    if(q){ const hay=[r["Nama Penuh"],r["Kelas"],r["Email"]].join(" ").toLowerCase(); if(hay.indexOf(q)===-1) return false; }
+    return true;
+  });
+  renderCards(out);
+  document.getElementById("dirCount").textContent = `Menunjukkan ${out.length} daripada ${DIR_DATA.length} pengawas · Sesi ${SES.get()}`;
+}
+function renderCards(rows){
+  const grid = document.getElementById("dirGrid");
+  const boleh = CAN_SEE_SENSITIVE.indexOf(AUTH.get().peranan) !== -1;
+  if(!rows.length){ grid.innerHTML='<div class="empty">Tiada pengawas sepadan.</div>'; return; }
+  grid.innerHTML = rows.map(r=>{
+    const jaw = r["Jawatan (PKK)"] && r["Jawatan (PKK)"]!=="Ahli Biasa" ? `<div class="jaw">${esc(r["Jawatan (PKK)"])}</div>` : "";
+    const unit = shortUnit(r["Unit Uniform"]||""); const tel=r["No. Telefon"];
+    const sens = boleh ? (tel?`<div class="sens">📞 ${esc(String(tel))}</div>`:"") : `<div class="sens locked">🔒 Maklumat hubungan disekat</div>`;
+    return `<div class="pcard"><div class="avatar">${initials(r["Nama Penuh"])}</div>
+      <div><div class="nm">${esc(r["Nama Penuh"]||"—")}</div>
+      <div class="meta"><span class="kelas-badge">${esc(r["Kelas"]||"?")}</span>${esc(unit)}</div>${jaw}${sens}</div></div>`;
+  }).join("");
+}
+
+/* ==================== CONFIG (kepala dokumen) ==================== */
+let CFG = null;
+async function loadConfig(){
+  const c = readCache("splpkk_config"); if (c) CFG = c;
+  try { CFG = await api("config"); writeCache("splpkk_config", CFG); } catch(e){}
+}
+
+/* ==================== PENJANA SIJIL (M7) ==================== */
+const BOLEH_JANA_SIJIL = ["Admin","Setiausaha","Ketua Pengawas"];
+let SIJIL_PICK = {};   // { ID Ahli: rekod ahli }
+
+function renderSijil(){
+  const body = document.getElementById("sijilBody");
+  const peranan = AUTH.get().peranan;
+  if (BOLEH_JANA_SIJIL.indexOf(peranan) === -1){
+    body.innerHTML = `<div class="notice">Penjana sijil hanya untuk Admin, Setiausaha & Ketua Pengawas. Peranan anda: <b>${esc(peranan)}</b>.</div>`;
+    return;
+  }
+  const today = new Date().toISOString().slice(0,10);
+  body.innerHTML = `
+    <div class="form-panel">
+      <div class="field">
+        <label>Jenis sijil</label>
+        <div class="seg" id="sijilJenis">
+          <button data-j="Penyertaan" class="on">Penyertaan</button>
+          <button data-j="Penghargaan">Penghargaan</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="sijilProgram">Nama program / majlis</label>
+        <input id="sijilProgram" type="text" placeholder="cth. Perkhemahan Perdana Pengawas Kokurikulum 2026">
+      </div>
+      <div class="field">
+        <label for="sijilTarikh">Tarikh</label>
+        <input id="sijilTarikh" type="date" value="${today}">
+        <div class="hint">Sesi: <b>${esc(SES.get())}</b> · no. siri dijana automatik mengikut sesi.</div>
+      </div>
+    </div>
+
+    <div class="form-panel">
+      <div class="rcp-head">
+        <label style="margin:0">Pilih penerima</label>
+        <span class="rcp-actions">
+          <button class="linkbtn" id="rcpAll">Pilih semua</button>
+          <button class="linkbtn" id="rcpNone">Nyahpilih</button>
+        </span>
+      </div>
+      <input class="search" id="rcpSearch" type="search" placeholder="Cari nama atau kelas…" style="width:100%;margin-bottom:8px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;outline:none">
+      <div class="rcp-list" id="rcpList">Memuatkan direktori…</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:10px;flex-wrap:wrap">
+        <span class="selcount"><span id="rcpCount">0</span> penerima dipilih</span>
+        <button class="btn gold" id="btnJanaSijil" style="width:auto;margin:0;padding:12px 22px" disabled>Jana &amp; Pratonton Sijil</button>
+      </div>
+      <div id="sijilMsg" class="msg"></div>
+    </div>`;
+
+  // jenis toggle
+  body.querySelectorAll("#sijilJenis button").forEach(b =>
+    b.addEventListener("click", () => {
+      body.querySelectorAll("#sijilJenis button").forEach(x=>x.classList.remove("on"));
+      b.classList.add("on");
+    }));
+  document.getElementById("sijilProgram").addEventListener("input", updateJanaBtn);
+  document.getElementById("rcpSearch").addEventListener("input", filterRcp);
+  document.getElementById("rcpAll").addEventListener("click", () => toggleAllRcp(true));
+  document.getElementById("rcpNone").addEventListener("click", () => toggleAllRcp(false));
+  document.getElementById("btnJanaSijil").addEventListener("click", janaSijil);
+
+  SIJIL_PICK = {};
+  loadRcpList();
+}
+
+let RCP_DATA = [];
+async function loadRcpList(){
+  const sesi = SES.get();
+  const cached = readCache("splpkk_dir_" + sesi);
+  if (cached){ RCP_DATA = cached; paintRcp(); }
+  try { RCP_DATA = await api("list", { sheet:"Senarai Ahli (Master)", sesi }); writeCache("splpkk_dir_"+sesi, RCP_DATA); paintRcp(); }
+  catch(e){ if(!cached) document.getElementById("rcpList").textContent = "Ralat: " + e.message; }
+}
+function paintRcp(){
+  filterRcp();
+}
+function filterRcp(){
+  const q = (document.getElementById("rcpSearch").value||"").trim().toLowerCase();
+  const list = document.getElementById("rcpList");
+  const rows = RCP_DATA.filter(r => !q || [r["Nama Penuh"],r["Kelas"]].join(" ").toLowerCase().indexOf(q)!==-1);
+  if (!rows.length){ list.innerHTML = '<div class="empty" style="padding:20px 0">Tiada ahli sepadan.</div>'; return; }
+  list.innerHTML = rows.map(r => {
+    const id = r["ID Ahli"];
+    const on = SIJIL_PICK[id] ? "checked" : "";
+    return `<label class="rcp"><input type="checkbox" data-id="${esc(id)}" ${on}>
+      <span><span class="nm">${esc(r["Nama Penuh"]||"—")}</span>
+      <span class="mt"> · ${esc(r["Kelas"]||"?")} · ${esc(shortUnit(r["Unit Uniform"]||""))}</span></span></label>`;
+  }).join("");
+  list.querySelectorAll("input[type=checkbox]").forEach(cb =>
+    cb.addEventListener("change", () => {
+      const id = cb.getAttribute("data-id");
+      if (cb.checked) SIJIL_PICK[id] = RCP_DATA.find(r=>String(r["ID Ahli"])===id);
+      else delete SIJIL_PICK[id];
+      updateRcpCount();
+    }));
+  updateRcpCount();
+}
+function toggleAllRcp(on){
+  const q = (document.getElementById("rcpSearch").value||"").trim().toLowerCase();
+  RCP_DATA.filter(r => !q || [r["Nama Penuh"],r["Kelas"]].join(" ").toLowerCase().indexOf(q)!==-1)
+    .forEach(r => { const id=r["ID Ahli"]; if(on) SIJIL_PICK[id]=r; else delete SIJIL_PICK[id]; });
+  filterRcp();
+}
+function updateRcpCount(){
+  document.getElementById("rcpCount").textContent = Object.keys(SIJIL_PICK).length;
+  updateJanaBtn();
+}
+function updateJanaBtn(){
+  const prog = (document.getElementById("sijilProgram").value||"").trim();
+  document.getElementById("btnJanaSijil").disabled = !(prog && Object.keys(SIJIL_PICK).length);
+}
+
+async function janaSijil(){
+  const auth = AUTH.get();
+  const jenis = document.querySelector("#sijilJenis button.on").getAttribute("data-j");
+  const program = document.getElementById("sijilProgram").value.trim();
+  const tarikh = document.getElementById("sijilTarikh").value;
+  const penerima = Object.keys(SIJIL_PICK);
+  const msg = document.getElementById("sijilMsg");
+  msg.textContent = "Menjana " + penerima.length + " sijil…"; msg.className = "msg";
+  try {
+    const recs = await api("genSijil",
+      { sesi:SES.get(), jenis, program, tarikh, penerima, peranan:auth.peranan, pin:auth.pin }, "POST");
+    msg.textContent = "Berjaya. " + recs.length + " sijil dijana & dilog."; msg.className = "msg ok";
+    openPrint(recs, "Sijil " + jenis + " — " + program);
+  } catch(e){ msg.textContent = e.message; msg.className = "msg err"; }
+}
+
+/* --------- Pembinaan sijil & cetak --------- */
+function openPrint(recs, title){
+  document.getElementById("printTitle").textContent = title || "Pratonton Sijil";
+  document.getElementById("printRoot").innerHTML = recs.map(certHTML).join("");
+  document.getElementById("printModal").classList.remove("hidden");
+}
+function closePrint(){ document.getElementById("printModal").classList.add("hidden"); }
+
+function certHTML(r){
+  const cfg = CFG || {};
+  const sekolah = cfg.sekolah || "SMK TINGGI KUCHING";
+  const slogan  = cfg.slogan  || "Lembaga Pengawas Kokurikulum";
+  const alamat  = cfg.alamat_sekolah || "";
+  const verb = (r.jenis === "Penghargaan")
+    ? "sebagai menghargai sumbangan dalam"
+    : "atas penyertaan dalam";
+  const sign = (rl, nm) => `<div class="col"><div class="ln"></div><div class="nm">${nm?esc(nm):"&nbsp;"}</div><div class="rl">${esc(rl)}</div></div>`;
+  return `<div class="cert-page"><div class="cert-frame"><div class="cert-inner">
+    <div class="cert-seal">SMK<br>TINGGI<br>KUCHING</div>
+    <div class="cert-school">${esc(sekolah)}</div>
+    <div class="cert-sub">${esc(slogan.toUpperCase())}</div>
+    ${alamat?`<div class="cert-addr">${esc(alamat)}</div>`:""}
+    <div class="cert-title">SIJIL ${esc((r.jenis||"Penyertaan").toUpperCase())}</div>
+    <div class="cert-line">Dengan ini diperakui bahawa</div>
+    <div class="cert-name">${esc(r.nama||"—")}</div>
+    <div class="cert-role">${esc(r.kelas||"")}${r.jawatan?" · "+esc(r.jawatan):""}</div>
+    <div class="cert-line">${esc(verb)}</div>
+    <div class="cert-prog">${esc(r.program||"")}</div>
+    <div class="cert-date">pada ${esc(fmtTarikh(r.tarikh))}</div>
+    <div class="cert-sign">
+      ${sign("Guru Penasihat", cfg.guru_penasihat)}
+      ${sign("Penolong Kanan Kokurikulum", cfg.pk_koku)}
+      ${sign("Pengetua", cfg.pengetua)}
+    </div>
+    <div class="cert-serial">No. Siri: ${esc(r.no_siri||"")}</div>
+  </div></div></div>`;
+}
+
+const BULAN = ["Januari","Februari","Mac","April","Mei","Jun","Julai","Ogos","September","Oktober","November","Disember"];
+function fmtTarikh(t){
+  if(!t) return "____________";
+  const d = new Date(t);
+  if (isNaN(d)) return String(t);
+  return d.getDate() + " " + BULAN[d.getMonth()] + " " + d.getFullYear();
+}
+
+/* --------- Utiliti --------- */
+function shortUnit(u){ return String(u||"").replace(/^A\d+\.\s*/,"").replace(/\s*\(.+?\)\s*$/,"").trim() || u; }
+function initials(n){ if(!n) return "?"; const p=String(n).trim().split(/\s+/); return ((p[0]||"")[0]||"")+((p[1]||"")[0]||""); }
+function uniq(a){ return [...new Set(a.filter(v=>v!=null && v!==""))]; }
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function writeCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function readCache(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+
+/* --------- Auto-masuk --------- */
+if (AUTH.get()) enterApp();
+</script>
+</body>
+</html>
