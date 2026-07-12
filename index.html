@@ -1968,7 +1968,7 @@ function renderSurat(){
   const peranan=AUTH.get().peranan;
   if (BOLEH_SURAT.indexOf(peranan)===-1){
     document.getElementById("wizStepsS").innerHTML="";
-    body.innerHTML=`<div class="notice">Penjana surat rasmi hanya untuk Admin & Setiausaha. Peranan anda: <b>${esc(peranan)}</b>.</div>`;
+    body.innerHTML=`<div class="notice">Penjana surat rasmi hanya untuk Admin, Ketua Pengawas & Setiausaha. Peranan anda: <b>${esc(peranan)}</b>.</div>`;
     return;
   }
   if(!SURAT) initSurat();
