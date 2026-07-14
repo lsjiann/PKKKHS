@@ -3800,7 +3800,6 @@ async function renderTetapan(){
       msg.innerHTML=html; msg.className="msg ok";
     }catch(e){ msg.textContent=e.message; msg.className="msg err"; }
   };
-  loadPinTable();
   const el=document.getElementById("pinTable");
   let rows; try{ rows=await api("getAkses",{peranan:AUTH.get().peranan,pin:AUTH.get().pin},"POST"); }
   catch(e){ el.innerHTML=`<div class="empty">Ralat: ${esc(e.message)}</div>`; return; }
