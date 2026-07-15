@@ -83,6 +83,10 @@
   .hamb{display:none;background:transparent;border:1px solid var(--line);border-radius:9px;font-size:17px;padding:4px 11px;cursor:pointer;color:var(--navy)}
   .present-btn{background:var(--navy);color:#fff;border:1px solid var(--navy);padding:7px 12px;border-radius:10px;font-size:13px;cursor:pointer}
   .present-btn:hover{background:#24365e}
+  .refresh-btn{background:#eef1f7;border:1px solid var(--line);color:var(--navy);border-radius:10px;font-size:14px;padding:6px 10px;cursor:pointer;line-height:1}
+  .refresh-btn:hover{border-color:var(--gold);transform:rotate(45deg);transition:transform .2s}
+  .sync-dot{width:9px;height:9px;border-radius:50%;background:#cfd6e6;flex:none;transition:background .2s,box-shadow .2s}
+  .sync-dot.on{background:#2e9e5b;box-shadow:0 0 0 3px rgba(46,158,91,.2)}
   .topbar .pill{background:#eef1f7;border:1px solid var(--line);color:var(--navy)}
   .topbar .pill.arkib-pill{background:#fbeecb;border-color:var(--gold);color:#7a5a00}
   .topbar select.sesi{background:#fff;color:var(--navy);border:1.5px solid var(--line)}
@@ -604,6 +608,8 @@
       <button class="hamb" id="hambBtn" aria-label="Menu">☰</button>
       <div class="tb-title serif" id="pageTitle">Papan Pemuka</div>
       <div class="spacer"></div>
+      <span class="sync-dot" id="syncDot" title="Segerak automatik"></span>
+      <button class="refresh-btn" id="refreshBtn" title="Muat semula sekarang">🔄</button>
       <span class="pill arkib-pill hidden" id="arkibPill">🔒 Arkib · baca-sahaja</span>
       <select class="sesi" id="sesiSel" title="Tukar sesi"></select>
       <button class="present-btn" id="presentBtn" title="Mod Pembentangan">🖥️ Pembentangan</button>
@@ -926,6 +932,8 @@ function enterApp(){
   document.getElementById("hambBtn").addEventListener("click", ()=>document.getElementById("app").classList.toggle("nav-open"));
   document.getElementById("navOverlay").addEventListener("click", closeNav);
   document.getElementById("presentBtn").addEventListener("click", togglePresent);
+  document.getElementById("refreshBtn").addEventListener("click", ()=>{ refreshCurrent(); flashSync(); });
+  if(!window._autoSyncTimer) window._autoSyncTimer=setInterval(autoSync, 25000);
 
   renderModules();
   loadConfig();
@@ -933,7 +941,9 @@ function enterApp(){
 }
 
 function isHidden(id){ return document.getElementById(id).classList.contains("hidden"); }
+let CURRENT_VIEW="viewDashboard";
 function setView(id){
+  CURRENT_VIEW=id;
   ["viewDashboard","viewDirektori","viewCarta","viewArkib","viewSijil","viewSurat","viewLaporan","viewTugasan","viewTakwim","viewProjek","viewBuku","viewTetapan"].forEach(v =>
     document.getElementById(v).classList.toggle("hidden", v !== id));
   const meta=NAVMAP[id];
@@ -942,6 +952,41 @@ function setView(id){
     document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("on", b.dataset.nav===meta[0]));
   }
   try{ document.getElementById("main").scrollTop=0; window.scrollTo(0,0); }catch(e){}
+}
+/* --- Muat semula & segerak automatik --- */
+function isEditingNow(){
+  // jangan segerak jika ada modal/editor/wizard aktif (elak buang kerja pengguna)
+  if(document.querySelector(".op-ov")) return true;                 // modal CRUD terbuka
+  if(document.getElementById("ajkBiroWrap")) return true;           // editor AJK terbuka
+  if(document.getElementById("lapPreview")) return true;            // borang Pemantauan/Minit terbuka
+  if(SURAT && SURAT.step>1) return true;                            // wizard surat
+  if(typeof SIJIL!=="undefined" && SIJIL && SIJIL.step>1) return true; // wizard sijil
+  if(typeof LAP!=="undefined" && LAP && LAP.view==="borang" && !isHidden("viewLaporan")) return true; // borang laporan program
+  return false;
+}
+function viewLoader(id){
+  return ({
+    viewDashboard:()=>refreshDashboard(),
+    viewDirektori:()=>loadDirektori(),
+    viewCarta:()=>renderCartaPenuh(),
+    viewTugasan:()=>{ if(!isEditingNow()) renderTugasan(); },
+    viewTakwim:()=>renderTakwim(),
+    viewProjek:()=>showProjek(),
+    viewLaporan:()=>{ if(LAP&&LAP.view==="arkib") renderLaporan(); },
+    viewBuku:()=>{ if(typeof renderBuku==="function") renderBuku(); },
+    viewArkib:()=>{ if(typeof renderArkib==="function") renderArkib(); }
+  })[id];
+}
+function refreshCurrent(){
+  const f=viewLoader(CURRENT_VIEW);
+  if(f){ try{ f(); }catch(e){} }
+}
+function flashSync(){ const d=document.getElementById("syncDot"); if(!d) return; d.classList.add("on"); setTimeout(()=>d.classList.remove("on"),900); }
+function autoSync(){
+  if(document.hidden) return;                 // tab tidak aktif
+  if(isEditingNow()) return;                   // jangan ganggu penyuntingan
+  const f=viewLoader(CURRENT_VIEW);
+  if(f){ try{ f(); flashSync(); }catch(e){} }
 }
 function showDashboard(){ setView("viewDashboard"); refreshDashboard(); }
 function showDirektori(){ setView("viewDirektori"); loadDirektori(); }
@@ -2593,14 +2638,15 @@ function printDok(kind){
 async function simpanDok(kind){
   const st=LAP[kind]||{}, msg=document.getElementById("dokMsg");
   const tajuk=kind==="minit"?(st.nama_mesy||"Minit Mesyuarat"):("Pemantauan "+(st.tarikh?fmtTarikh(st.tarikh):""));
-  const rec={ id:st.id||null, tajuk:tajuk.trim(), tarikh:st.tarikh||"", data:JSON.stringify(st) };
+  const rec={ id:st.id||null, tajuk:tajuk.trim(), tarikh:st.tarikh||"", base_ts:st._base_ts||"", data:JSON.stringify(st) };
   msg.textContent="Menyimpan ke awan…"; msg.className="msg";
   try{ const auth=AUTH.get();
     const saved=await api("simpanDokLap",{ jenis:kind, sesi:SES.get(), rec:rec, peranan:auth.peranan, pin:auth.pin },"POST");
-    st.id=saved.id;
+    st.id=saved.id; if(saved.timestamp) st._base_ts=saved.timestamp;
     msg.innerHTML=`Disimpan ke awan ✓ · notifikasi Telegram dihantar. <button class="linkbtn" id="goArk">Lihat Arkib →</button>`; msg.className="msg ok";
     const g=document.getElementById("goArk"); if(g) g.onclick=()=>{ LAP.view="arkib"; renderLaporan(); };
-  }catch(e){ msg.textContent=e.message; msg.className="msg err"; }
+  }catch(e){ msg.innerHTML=esc(e.message)+(String(e.message).indexOf("KONFLIK")===0?` <button class="linkbtn" id="dokReload">Muat semula →</button>`:""); msg.className="msg err";
+    const rl=document.getElementById("dokReload"); if(rl) rl.onclick=()=>{ LAP.view="arkib"; renderLaporan(); }; }
 }
 
 /* --------- Borang --------- */
@@ -2832,8 +2878,8 @@ async function lapSimpan(){
   const murid=Object.values(LAP.murid);
   msg.textContent="Menyimpan ke awan (muat naik foto)…"; msg.className="msg";
   try{
-    const res=await api("simpanLaporan",{ id:LAP.id, sesi:SES.get(), butiran:LAP.butiran, murid:murid, foto:foto, layout:LAP.layout, peranan:auth.peranan, pin:auth.pin },"POST");
-    LAP.id=res.id;
+    const res=await api("simpanLaporan",{ id:LAP.id, base_ts:LAP._base_ts||"", sesi:SES.get(), butiran:LAP.butiran, murid:murid, foto:foto, layout:LAP.layout, peranan:auth.peranan, pin:auth.pin },"POST");
+    LAP.id=res.id; if(res.timestamp) LAP._base_ts=res.timestamp;
     let k=0; for(let i=0;i<4;i++){ if(LAP.foto[i]){ LAP.foto[i]={ drive_id:res.foto[k], dataUrl:LAP.foto[i].dataUrl }; k++; } }
     msg.textContent="Laporan disimpan ke arkib ✓ (ID: "+res.id+")"; msg.className="msg ok";
   }catch(e){ msg.textContent=e.message; msg.className="msg err"; }
@@ -2886,7 +2932,7 @@ async function lapArkibDok(kind,elId,sheet){
 function lapOpenDok(kind,row){
   if(!row) return;
   let data={}; try{ data=JSON.parse(row.data||"{}"); }catch(e){}
-  data.id=row.id;
+  data.id=row.id; data._base_ts=row.timestamp||"";
   if(kind==="minit"&&!Array.isArray(data.agenda)) data.agenda=[{},{}];
   LAP[kind]=data; LAP.view=kind; renderLaporan();
 }
@@ -2894,7 +2940,7 @@ async function lapOpen(id){
   try{
     const r=await api("getLaporan",{id});
     if(!LAP) initLap();
-    LAP.id=r.id; LAP.layout=r.layout||"A"; LAP.butiran=Object.assign(LAP.butiran,r.butiran);
+    LAP.id=r.id; LAP._base_ts=r.timestamp||""; LAP.layout=r.layout||"A"; LAP.butiran=Object.assign(LAP.butiran,r.butiran);
     LAP.murid={}; (r.murid||[]).forEach(m=>{ LAP.murid[m.id]=m; });
     LAP.foto=[null,null,null,null]; (r.foto||[]).forEach((f,i)=>{ if(i<4) LAP.foto[i]={ drive_id:f.drive_id, dataUrl:f.dataUrl }; });
     LAP.view="borang"; renderLaporan();
@@ -2938,7 +2984,7 @@ function pill(s){ return `<span class="pill ${statusClass(s)}">${esc(s||"-")}</s
 function overdue(d,status){ if(String(status||"").toLowerCase().indexOf("selesai")!==-1) return false; if(!d) return false; const x=new Date(d); const t=new Date(); t.setHours(0,0,0,0); return !isNaN(x.getTime())&&x<t; }
 
 async function opCreate(sheet,row){ return api("create",{sheet,row,sesi:row.sesi,peranan:AUTH.get().peranan,pin:AUTH.get().pin},"POST"); }
-async function opUpdate(sheet,key,value,row){ return api("update",{sheet,key,value,row,sesi:row.sesi,peranan:AUTH.get().peranan,pin:AUTH.get().pin},"POST"); }
+async function opUpdate(sheet,key,value,row){ return api("update",{sheet,key,value,row,base_ts:(row&&row.base_ts)||"",sesi:row.sesi,peranan:AUTH.get().peranan,pin:AUTH.get().pin},"POST"); }
 async function opDelete(sheet,key,value){ return api("delete",{sheet,key,value,sesi:SES.get(),peranan:AUTH.get().peranan,pin:AUTH.get().pin},"POST"); }
 
 /* Modal ringkas boleh guna semula */
@@ -3088,7 +3134,7 @@ function ajkNew(){
 }
 function ajkOpen(row){
   if(!row) return; let d={}; try{ d=JSON.parse(row.data||"{}"); }catch(e){}
-  AJKW={ id:row.id, projek_id:row.projek_id||"", program:row.program||d.program||"", tarikh:row.tarikh||d.tarikh||"",
+  AJKW={ id:row.id, projek_id:row.projek_id||"", program:row.program||d.program||"", tarikh:row.tarikh||d.tarikh||"", base_ts:row.timestamp||"",
     utama:Object.assign({pengarah:"",timbalan:"",su:"",bendahari:""}, d.utama||{}),
     biro:Array.isArray(d.biro)?d.biro.map(b=>({nama:b.nama||"",ketua:b.ketua||"",ahli:Array.isArray(b.ahli)?b.ahli.slice():[],tugas:b.tugas||""})):[] };
   ajkEditor();
@@ -3271,16 +3317,17 @@ async function ajkSave(){
   const ahliSet={}; const push=id=>{ if(id){ const m=ajkMem(id); if(m) ahliSet[id]={id:id,nama:m["Nama Penuh"],kelas:m["Kelas"]}; } };
   const u=AJKW.utama; [u.pengarah,u.timbalan,u.su,u.bendahari].forEach(push);
   AJKW.biro.forEach(b=>{ push(b.ketua); (b.ahli||[]).forEach(push); });
-  const rec={ id:AJKW.id, projek_id:AJKW.projek_id, program:AJKW.program.trim(), tarikh:AJKW.tarikh||"",
+  const rec={ id:AJKW.id, projek_id:AJKW.projek_id, program:AJKW.program.trim(), tarikh:AJKW.tarikh||"", base_ts:AJKW.base_ts||"",
     penyelaras:ajkName(u.pengarah)||"", ahli:Object.values(ahliSet),
     data:JSON.stringify({program:AJKW.program,tarikh:AJKW.tarikh,utama:AJKW.utama,biro:AJKW.biro}) };
   msg.textContent="Menyimpan & memaut projek…"; msg.className="msg";
   try{ const auth=AUTH.get();
     const res=await api("simpanAjk",{sesi:SES.get(),rec:rec,peranan:auth.peranan,pin:auth.pin},"POST");
-    AJKW.id=res.id; AJKW.projek_id=res.projek_id;
+    AJKW.id=res.id; AJKW.projek_id=res.projek_id; if(res.timestamp) AJKW.base_ts=res.timestamp;
     msg.innerHTML=`Disimpan ✓ · Projek dipaut untuk pemantauan · Telegram dihantar. <button class="linkbtn" id="ajkGoPj">Buka Projek →</button>`; msg.className="msg ok";
     const g=document.getElementById("ajkGoPj"); if(g) g.onclick=showProjek;
-  }catch(e){ msg.textContent=e.message; msg.className="msg err"; }
+  }catch(e){ msg.innerHTML=esc(e.message)+(String(e.message).indexOf("KONFLIK")===0?` <button class="linkbtn" id="ajkReload">Muat semula →</button>`:""); msg.className="msg err";
+    const rl=document.getElementById("ajkReload"); if(rl) rl.onclick=renderAjk; }
 }
 
 /* ==================== M9 — TAKWIM & KEHADIRAN ==================== */
