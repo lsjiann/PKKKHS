@@ -2726,6 +2726,11 @@ function setFieldVal(id,v){ const el=document.getElementById(id); if(el) el.valu
 
 /* --------- Bantuan penulisan: AI (backend) atau draf --------- */
 async function janaTeksUI(jenis, fieldId, key){
+  const b=LAP.butiran||{};
+  // pastikan sumber yang betul telah diisi
+  if(jenis==="objektif" && !String(b.program||"").trim()){ alert("Isi Nama Program dahulu — objektif dijana berdasarkan nama program."); return; }
+  if(jenis==="impak" && !String(b.pengisian||"").trim() && !String(b.ulasan||"").trim()){ alert("Isi Pengisian dan/atau Ulasan dahulu — impak dijana berdasarkan pengisian & ulasan."); return; }
+  if(jenis==="tindak" && !String(b.program||"").trim() && !String(b.ulasan||"").trim()){ alert("Isi Nama Program dan/atau Ulasan dahulu — tindak susul dijana berdasarkan program & ulasan."); return; }
   const btnMap={objektif:"ai_obj",impak:"ai_imp",tindak:"ai_tin"};
   const btn=document.getElementById(btnMap[jenis]); const old=btn?btn.textContent:"";
   if(btn){ btn.textContent="Menjana…"; btn.disabled=true; }
@@ -2737,10 +2742,14 @@ async function janaTeksUI(jenis, fieldId, key){
   if(btn){ btn.textContent=old; btn.disabled=false; }
 }
 function localDraft(jenis){
-  const prog=LAP.butiran.program||"program ini";
-  if(jenis==="impak") return "Program ini memberi impak positif kepada peserta dari segi peningkatan keyakinan diri, kemahiran kepimpinan dan semangat kerjasama. Peserta juga dapat mengaplikasikan pengetahuan yang diperoleh dalam menjalankan tugas sebagai pengawas kokurikulum dengan lebih berkesan.";
-  if(jenis==="tindak") return "Sebagai tindakan susulan, peserta akan diberi tugasan berkaitan bagi mengukuhkan kemahiran yang dipelajari. Pemantauan dan bimbingan berterusan akan dilaksanakan oleh guru penasihat, dan hasil program akan dinilai untuk penambahbaikan aktiviti akan datang.";
-  return "Objektif "+prog+" adalah untuk: (1) memberi pendedahan dan latihan kepada pengawas kokurikulum; (2) memupuk nilai kepimpinan, disiplin dan semangat kerjasama dalam kalangan peserta; (3) meningkatkan keberkesanan pengurusan serta pelaksanaan aktiviti kokurikulum sekolah.";
+  const b=LAP.butiran||{}; const prog=b.program||"program ini";
+  const clip=(s,n)=>{ s=String(s||"").replace(/\s+/g," ").trim(); return s.length>n?s.slice(0,n).trim()+"…":s; };
+  const ul=clip(b.ulasan,130), pg=clip(b.pengisian,130);
+  if(jenis==="impak")
+    return "Program "+prog+" memberi impak yang positif dalam meningkatkan kemenjadian murid dari segi kepimpinan, terutamanya menerusi "+(pg?"pengisian aktiviti seperti "+pg:"pengisian aktiviti yang dijalankan")+". Peserta menunjukkan peningkatan keyakinan diri, disiplin dan semangat kerjasama"+(ul?", selaras dengan ulasan bahawa "+ul:"")+". Impak ini turut menyerlahkan sahsiah terpuji pengawas kokurikulum serta membantu mengharumkan nama baik sekolah.";
+  if(jenis==="tindak")
+    return "Sebagai tindakan susulan kepada "+prog+", pemantauan dan bimbingan berterusan akan dilaksanakan oleh guru penasihat bagi mengukuhkan kemahiran kepimpinan murid. "+(ul?"Berdasarkan ulasan ("+ul+"), penambahbaikan akan dilakukan pada program akan datang. ":"Penambahbaikan akan dilakukan pada program akan datang. ")+"Pengawas kokurikulum akan diberi tugasan lanjutan bagi memupuk sahsiah terpuji dan sentiasa menjaga nama baik sekolah.";
+  return "Objektif "+prog+" adalah untuk: (1) meningkatkan kemenjadian murid dari segi kepimpinan menerusi penglibatan aktif dalam program; (2) memupuk sahsiah terpuji, disiplin dan semangat kerjasama dalam kalangan pengawas kokurikulum; (3) mengharumkan nama baik sekolah menerusi pengurusan dan pelaksanaan aktiviti kokurikulum yang berkesan.";
 }
 function lapAllRcp(on){
   const q=(document.getElementById("lapRcpSearch").value||"").trim().toLowerCase();
